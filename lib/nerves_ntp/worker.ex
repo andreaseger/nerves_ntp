@@ -28,7 +28,6 @@ defmodule Nerves.Ntp.Worker do
   def handle_info({_, {:exit_status, code}}, _state) do
     Logger.debug "ntpd exited with code: #{code}"
     # ntp exited so we will try to restart it after 10 sek
-    # Port.close(state) // not required... as port is already closed
     pause_and_die
   end
 
@@ -37,7 +36,7 @@ defmodule Nerves.Ntp.Worker do
     case parse_ntp_output data do
       :ok -> 
         {:noreply, port}
-      :error -> 
+      :error ->
         Port.close(port)
         pause_and_die
     end
@@ -57,6 +56,7 @@ defmodule Nerves.Ntp.Worker do
 
   defp pause_and_die do
     Process.sleep(10_000)
+    System.cmd("killall", ["-9", "ntpd"])
     {:stop, :shutdown, nil}
   end
 
